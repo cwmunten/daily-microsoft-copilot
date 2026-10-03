@@ -3,32 +3,18 @@ import './globals.css';
 import './copilot-theme.css';
 import './scene.css';
 
+const appIcon='/daily-copilot-icon.png?v=2';
 export const metadata: Metadata = {
   title: 'Advantive daily Copilot news',
   description: 'Dagelijkse Nederlandstalige update over Microsoft Copilot van Advantive.',
   applicationName: 'Advantive daily Copilot news',
+  manifest: '/manifest.webmanifest?v=2',
   icons: {
-    icon: [
-      { url: '/daily-copilot-icon.png', type: 'image/png' },
-      { url: '/daily-copilot-icon.png', sizes: '512x512', type: 'image/png' },
-    ],
-    shortcut: '/daily-copilot-icon.png',
-    apple: [
-      { url: '/daily-copilot-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
+    icon: [{ url: appIcon, sizes: '512x512', type: 'image/png' }],
+    shortcut: appIcon,
+    apple: [{ url: appIcon, sizes: '180x180', type: 'image/png' }],
   },
-  appleWebApp: {
-    capable: true,
-    title: 'Daily Copilot',
-    statusBarStyle: 'default',
-  },
+  appleWebApp: { capable: true, title: 'Daily Copilot', statusBarStyle: 'default' },
 };
-
-export const viewport: Viewport = {
-  themeColor: '#f7faff',
-};
-
-// Daily Copilot production build: Supabase-backed persistent news archive.
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="nl"><body>{children}</body></html>;
-}
+export const viewport: Viewport = { themeColor: '#f7faff' };
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {return <html lang="nl"><body>{children}</body></html>}
