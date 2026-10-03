@@ -28,6 +28,7 @@ export const viewport: Viewport = {
   themeColor: '#f7faff',
 };
 
+// Daily Copilot production build: Supabase-backed persistent news archive.
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="nl"><body>{children}</body></html>;
 }
