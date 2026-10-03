@@ -1,52 +1,24 @@
-import { neon } from '@neondatabase/serverless';
-
 export type StoredNews={title:string;url:string;description:string;date:string|null;source:string;product:string;status:string};
 
-const connection=process.env.DATABASE_URL;
-const sql=connection?neon(connection):null;
-let initialized=false;
+const supabaseUrl=(process.env.NEXT_PUBLIC_SUPABASE_URL||'https://iolqfnrspjtwjptijriy.supabase.co').replace(/\/$/,'');
+const publishableKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||'sb_publishable_W3YgGgMCGrsPSZLmyNZlQw_hYySt2lI';
 
-async function init(){
-  if(!sql||initialized)return;
-  await sql`CREATE TABLE IF NOT EXISTS copilot_news (
-    id BIGSERIAL PRIMARY KEY,
-    url TEXT NOT NULL UNIQUE,
-    title TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    published_at TIMESTAMPTZ NOT NULL,
-    source TEXT NOT NULL,
-    product TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'Microsoft update',
-    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  )`;
-  await sql`CREATE INDEX IF NOT EXISTS copilot_news_published_at_idx ON copilot_news (published_at DESC)`;
-  initialized=true;
-}
-
-export function databaseEnabled(){return Boolean(sql)}
+function headers(){return{apikey:publishableKey,Authorization:`Bearer ${publishableKey}`,'Content-Type':'application/json'}}
+export function databaseEnabled(){return Boolean(supabaseUrl&&publishableKey)}
 
 export async function saveNews(items:StoredNews[]){
-  if(!sql)return 0;
-  await init();
-  let saved=0;
-  for(const item of items){
-    if(!item.url||!item.title||!item.date)continue;
-    const published=new Date(item.date);
-    if(Number.isNaN(published.getTime()))continue;
-    await sql`INSERT INTO copilot_news (url,title,description,published_at,source,product,status)
-      VALUES (${item.url},${item.title},${item.description||''},${published.toISOString()},${item.source},${item.product},${item.status})
-      ON CONFLICT (url) DO UPDATE SET
-        title=EXCLUDED.title, description=EXCLUDED.description, published_at=EXCLUDED.published_at,
-        source=EXCLUDED.source, product=EXCLUDED.product, status=EXCLUDED.status, last_seen_at=NOW()`;
-    saved++;
-  }
-  return saved;
+  const rows=items.filter(x=>x.url&&x.title&&x.date).map(item=>({
+    title:item.title,url:item.url,description:item.description||'',published_at:new Date(item.date as string).toISOString(),source:item.source,product:item.product,status:item.status||'Microsoft update',updated_at:new Date().toISOString()
+  })).filter(x=>!Number.isNaN(new Date(x.published_at).getTime()));
+  if(!rows.length)return 0;
+  const r=await fetch(`${supabaseUrl}/rest/v1/copilot_news?on_conflict=url`,{method:'POST',headers:{...headers(),Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows),cache:'no-store'});
+  if(!r.ok)throw new Error(`Supabase save failed: ${r.status} ${await r.text()}`);
+  return rows.length;
 }
 
 export async function readArchive(limit=1000):Promise<StoredNews[]>{
-  if(!sql)return[];
-  await init();
-  const rows=await sql`SELECT title,url,description,published_at,source,product,status FROM copilot_news ORDER BY published_at DESC LIMIT ${limit}`;
-  return rows.map((r:any)=>({title:r.title,url:r.url,description:r.description,date:new Date(r.published_at).toISOString(),source:r.source,product:r.product,status:r.status}));
+  const r=await fetch(`${supabaseUrl}/rest/v1/copilot_news?select=title,url,description,published_at,source,product,status&order=published_at.desc&limit=${limit}`,{headers:headers(),cache:'no-store'});
+  if(!r.ok)throw new Error(`Supabase read failed: ${r.status} ${await r.text()}`);
+  const rows=await r.json();
+  return rows.map((x:any)=>({title:x.title,url:x.url,description:x.description||'',date:x.published_at,source:x.source,product:x.product,status:x.status}));
 }
