@@ -3,7 +3,7 @@ import { useMemo,useState } from 'react';
 import { updates,type Update } from './data';
 type View='today'|'archive'|'search'|'about'; type WebResult={title:string;url:string;description:string;date:string|null;source:string};
 const products=['Alle','Copilot','Teams','Outlook','Word','Excel','PowerPoint','SharePoint','Agents','Copilot Studio','Beveiliging'];
-function Logo(){return <img className="advLogoImg" src="/advantive-logo.svg" alt="Advantive"/>}
+function Logo(){return <img className="advLogoImg" src="/Advantive%20logo.png" alt="Advantive"/>}
 function Icon({product}:{product:string}){const p=product.toLowerCase();const label=p.includes('teams')?'T':p.includes('outlook')?'O':p.includes('word')?'W':p.includes('excel')?'X':p.includes('powerpoint')?'P':p.includes('studio')?'AI':'C';return <div className={'productIcon '+label.toLowerCase()}>{label}</div>}
 function Status({value}:{value:string}){return <span className={'status '+value.toLowerCase().replaceAll(' ','-')}>{value.toUpperCase()}</span>}
 function Card({item,onOpen}:{item:Update;onOpen:()=>void}){return <button className="newsCard" onClick={onOpen}><Icon product={item.product}/><div className="newsCopy"><div className="metaTop"><Status value={item.status}/><span>{item.product}</span></div><h3>{item.title}</h3><p>{item.summary}</p></div><time>{new Date(item.date+'T12:00:00').toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'})}</time><b className="arrow">›</b></button>}
