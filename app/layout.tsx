@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Daily Microsoft Copilot | Advantive',
-  description: 'Dagelijkse Nederlandstalige update over Microsoft Copilot.',
+  title: 'Advantive daily Copilot news',
+  description: 'Dagelijkse Nederlandstalige update over Microsoft Copilot van Advantive.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
