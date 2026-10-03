@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import './copilot-theme.css';
+import './scene.css';
 
 export const metadata: Metadata = {
   title: 'Advantive daily Copilot news',
