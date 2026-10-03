@@ -1,20 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const trusted = ['microsoft.com','learn.microsoft.com','techcommunity.microsoft.com','support.microsoft.com','microsoft365.com'];
-const strip=(s:string)=>s.replace(/<!\[CDATA\[|\]\]>/g,'').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").trim();
-const tag=(xml:string,name:string)=>{const m=xml.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)<\\/${name}>`,'i'));return m?strip(m[1]):''};
+type LearnResult={title?:string;url?:string;description?:string;lastUpdatedDate?:string};
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req:NextRequest){
   const q=(req.nextUrl.searchParams.get('q')||'').trim();
   if(q.length<2) return NextResponse.json({results:[]});
-  const siteQuery='('+trusted.map(d=>`site:${d}`).join(' OR ')+')';
-  const url='https://www.bing.com/search?format=rss&count=30&q='+encodeURIComponent(`${q} Microsoft Copilot ${siteQuery}`);
+
+  // Microsoft Learn heeft een publieke zoek-API. Hierdoor zijn we niet afhankelijk
+  // van het scrapen van Bing-resultaten, dat op serverless hosts regelmatig wordt geblokkeerd.
+  const search=`${q} Microsoft Copilot`;
+  const endpoints=[
+    `https://learn.microsoft.com/api/search?search=${encodeURIComponent(search)}&locale=nl-nl&$top=25`,
+    `https://learn.microsoft.com/api/search?search=${encodeURIComponent(search)}&locale=en-us&$top=25`,
+  ];
+
   try{
-    const r=await fetch(url,{headers:{'User-Agent':'Mozilla/5.0'},next:{revalidate:900}});
-    if(!r.ok) throw new Error('search failed');
-    const xml=await r.text();
-    const items=[...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].map(m=>m[1]);
-    const results=items.map(item=>({title:tag(item,'title'),url:tag(item,'link'),description:tag(item,'description'),date:tag(item,'pubDate')})).filter(x=>{try{return trusted.some(d=>new URL(x.url).hostname.endsWith(d))}catch{return false}}).map(x=>({...x,date:x.date?new Date(x.date).toISOString():null,source:new URL(x.url).hostname.replace(/^www\./,'')}));
-    return NextResponse.json({results});
-  }catch{return NextResponse.json({results:[],error:'Internetzoekopdracht kon niet worden uitgevoerd.'},{status:502})}
+    let payload:any=null;
+    for(const url of endpoints){
+      const r=await fetch(url,{headers:{Accept:'application/json','User-Agent':'Daily-Microsoft-Copilot/1.0'},cache:'no-store'});
+      if(r.ok){payload=await r.json();if(Array.isArray(payload?.results)&&payload.results.length)break;}
+    }
+    if(!payload) throw new Error('Microsoft Learn Search API niet bereikbaar');
+
+    const raw:LearnResult[]=Array.isArray(payload.results)?payload.results:[];
+    const seen=new Set<string>();
+    const results=raw.map((item)=>{
+      const rawUrl=item.url||'';
+      const url=rawUrl.startsWith('http')?rawUrl:`https://learn.microsoft.com${rawUrl.startsWith('/')?'':'/'}${rawUrl}`;
+      let date:string|null=null;
+      if(item.lastUpdatedDate){const d=new Date(item.lastUpdatedDate);if(!Number.isNaN(d.getTime()))date=d.toISOString();}
+      return {title:item.title||'Microsoft Learn',url,description:item.description||'',date,source:'Microsoft Learn'};
+    }).filter(item=>{
+      try{const host=new URL(item.url).hostname; if(host!=='learn.microsoft.com'&&!host.endsWith('.learn.microsoft.com'))return false;}catch{return false}
+      if(seen.has(item.url))return false;seen.add(item.url);return true;
+    });
+
+    return NextResponse.json({results,provider:'Microsoft Learn',query:q},{headers:{'Cache-Control':'no-store'}});
+  }catch(error){
+    console.error('Internet search failed',error);
+    return NextResponse.json({results:[],error:'Live zoeken is tijdelijk niet beschikbaar. Probeer het later opnieuw.'},{status:502});
+  }
 }
