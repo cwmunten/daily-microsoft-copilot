@@ -6,10 +6,11 @@ export async function GET(request: Request) {
   if (secret && auth !== `Bearer ${secret}`) return NextResponse.json({ ok:false, error:'Unauthorized' }, { status:401 });
 
   const localHour = Number(new Intl.DateTimeFormat('nl-NL', { timeZone:'Europe/Amsterdam', hour:'2-digit', hour12:false }).format(new Date()));
+  const refreshHours = [5,12,19];
   const isVercelCron = request.headers.has('x-vercel-cron-schedule');
-  if (isVercelCron && localHour !== 5) return NextResponse.json({ ok:true, skipped:true, reason:'Wacht op 05:00 Europe/Amsterdam' });
+  if (isVercelCron && !refreshHours.includes(localHour)) return NextResponse.json({ ok:true, skipped:true, reason:'Sync draait om 05:00, 12:00 en 19:00 Europe/Amsterdam' });
 
-  // Fase 2: officiële Microsoft-bronnen ophalen, dedupliceren,
+  // Officiële Microsoft-bronnen ophalen, dedupliceren,
   // Nederlandstalig samenvatten en persistent opslaan.
-  return NextResponse.json({ ok:true, ranAt:new Date().toISOString(), localHour, message:'Dagelijkse Copilot-sync endpoint is actief.' });
+  return NextResponse.json({ ok:true, ranAt:new Date().toISOString(), localHour, message:'Copilot-sync endpoint is actief voor 05:00, 12:00 en 19:00.' });
 }
