@@ -1,6 +1,7 @@
 'use client';
 import { useEffect,useMemo,useState } from 'react';
 import { updates as fallbackUpdates,type Update } from './data';
+import './mobile-filter.css';
 type View='today'|'all'|'archive'|'search'|'about'; type WebResult={title:string;url:string;description:string;date:string|null;source:string}; type LiveItem={title:string;url:string;description:string;date:string|null;source:string;product:string;status:string};
 const products=['Totaal','M365 Copilot','Frontier','Agents','Copilot Studio','Copilot Code','Purview','Foundry','Microsoft/Work/Fabric IQ'];
 const navItems:[View,string,string][]= [['today','Vandaag','⌂'],['all','Updates','▤'],['archive','Archief','◷'],['search','Zoeken','⌕'],['about','Over','ⓘ']];
