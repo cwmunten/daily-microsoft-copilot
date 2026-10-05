@@ -9,6 +9,8 @@ export async function GET(request: Request) {
     const r=await fetch(`${origin}/api/news`,{cache:'no-store'});
     const j=await r.json();
     if(!r.ok)throw new Error(j?.error||'news collector failed');
-    return NextResponse.json({ok:true,ranAt:new Date().toISOString(),collected:j.count||0,sources:j.sources||[],message:'Dagelijkse Copilot-nieuwsverversing uitgevoerd.'});
+    let push=null;
+    try{const pr=await fetch(`${origin}/api/push/send`,{method:'POST',headers:secret?{authorization:`Bearer ${secret}`}:{}});push=await pr.json()}catch(e){console.error('push failed',e)}
+    return NextResponse.json({ok:true,ranAt:new Date().toISOString(),collected:j.count||0,sources:j.sources||[],push,message:'Dagelijkse Copilot-nieuwsverversing uitgevoerd.'});
   }catch(error){console.error(error);return NextResponse.json({ok:false,error:'Nieuwsverversing mislukt'},{status:502})}
 }
