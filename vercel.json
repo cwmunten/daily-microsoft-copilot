@@ -1,1 +1,1 @@
-{"$schema":"https://openapi.vercel.sh/vercel.json","crons":[{"path":"/api/cron","schedule":"0 3 * * *"}]}
+{"$schema":"https://openapi.vercel.sh/vercel.json","crons":[{"path":"/api/cron","schedule":"0 4 * * *"}]}
