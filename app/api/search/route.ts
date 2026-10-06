@@ -8,9 +8,9 @@ export async function GET(req:NextRequest){
   const q=(req.nextUrl.searchParams.get('q')||'').trim();
   if(q.length<2) return NextResponse.json({results:[]});
 
-  // Microsoft Learn heeft een publieke zoek-API. Hierdoor zijn we niet afhankelijk
+  // Microsoft Learn heeft een publieke zoek-API voor actuele Frontier- en agentinformatie. Hierdoor zijn we niet afhankelijk
   // van het scrapen van Bing-resultaten, dat op serverless hosts regelmatig wordt geblokkeerd.
-  const search=`${q} Microsoft Copilot`;
+  const search=`${q} Microsoft Frontier AI agents Copilot Foundry Agent 365 Work IQ`;
   const endpoints=[
     `https://learn.microsoft.com/api/search?search=${encodeURIComponent(search)}&locale=nl-nl&$top=25`,
     `https://learn.microsoft.com/api/search?search=${encodeURIComponent(search)}&locale=en-us&$top=25`,
